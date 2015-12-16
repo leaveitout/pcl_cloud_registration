@@ -1,0 +1,67 @@
+//
+// Created by sean on 09/12/15.
+//
+
+#include "util/KeypointSorter.hpp"
+
+bool KeypointSorter::areKeypointsValid(const vector<vector<cv::Point2d>>& keypoints) {
+    if(keypoints.size() == NUM_SQUARES) {
+        for(size_t i = 0; i < NUM_SQUARES; ++i)
+            if(keypoints[i].size() != NUM_CORNERS)
+                return false;
+        return true;
+    }
+    else
+        return false;
+}
+
+bool KeypointSorter::sortKeyPointsLeft(vector<vector<cv::Point2d>>& keypoints) {
+    if(!areKeypointsValid(keypoints))
+        return false;
+
+    sort(keypoints.begin(), keypoints.end(), compare_vertical_squares_inverse());
+
+    for(auto& sq : keypoints) {
+        sort(sq.begin(), sq.end(), compare_horizontal());
+        sort(sq.begin(), sq.begin()+2, compare_vertical_inverse());
+        sort(sq.begin()+2, sq.end(), compare_vertical_inverse());
+    }
+    return true;
+}
+
+bool KeypointSorter::sortKeyPointsCenter(vector<vector<cv::Point2d>>& keypoints) {
+    if(!areKeypointsValid(keypoints))
+        return false;
+
+    sort(keypoints.begin(), keypoints.end(), compare_horizontal_squares_inverse());
+
+    for(auto& sq : keypoints) {
+        sort(sq.begin(), sq.end(), compare_vertical_inverse());
+        sort(sq.begin(), sq.begin()+2, compare_horizontal_inverse());
+        sort(sq.begin()+2, sq.end(), compare_horizontal_inverse());
+    }
+    return true;
+}
+
+bool KeypointSorter::sortKeyPointsRight(vector<vector<cv::Point2d>>& keypoints) {
+    if(!areKeypointsValid(keypoints))
+        return false;
+
+    sort(keypoints.begin(), keypoints.end(), compare_vertical_squares());
+
+    for(auto& sq : keypoints) {
+        sort(sq.begin(), sq.end(), compare_horizontal_inverse());
+        sort(sq.begin(), sq.begin()+2, compare_vertical());
+        sort(sq.begin()+2, sq.end(), compare_vertical());
+    }
+    return true;
+}
+
+cv::Point2d KeypointSorter::getCentroid(const vector<cv::Point2d>& keypoints) {
+    cv::Point2d centroid{0,0};
+    for(auto& kp: keypoints)
+        centroid += kp;
+    int size = (int) keypoints.size();
+    centroid = cv::Point2d(centroid.x/size, centroid.y/size);
+    return move(centroid);
+}
