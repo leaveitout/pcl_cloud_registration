@@ -14,7 +14,7 @@ class SquareSorter {
 
     friend class SquareDetector;
 
-    static constexpr NUM_SQUARES = 4;
+    static constexpr int NUM_SQUARES = 4;
 
 private:
     struct Square {
@@ -22,20 +22,22 @@ private:
         Point2d centroid;
     };
 
+    static bool areSquaresValid(const vector<vector<Point>>& squares);
+
     static bool sortSquares(vector<vector<Point>> &squares, std::string camera_id);
-    static bool sortSquaresLeft(vector<vector<Point>> &squares);
-    static bool sortSquaresCenter(vector<vector<Point>> &squares);
-    static bool sortSquaresRight(vector<vector<Point>> &squares);
+    static void sortSquaresLeft(vector<Square> &squares);
+    static void sortSquaresCenter(vector<Square> &squares);
+    static void sortSquaresRight(vector<Square> &squares);
 
     struct compare_vertical {
         inline bool operator()(const Square& square1, const Square& square2) {
-            return square1.centroid.x < square2.centroid.x;
+            return square1.centroid.y < square2.centroid.y;
         }
     };
 
     struct compare_vertical_inverse {
         inline bool operator()(const Square& square1, const Square& square2) {
-            return square1.centroid.x > square2.centroid.x;
+            return square1.centroid.y > square2.centroid.y;
         }
     };
 

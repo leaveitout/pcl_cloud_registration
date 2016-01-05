@@ -8,6 +8,8 @@
 #include <pcl/PointIndices.h>
 #include <opencv2/imgproc/imgproc.hpp>
 #include <pcl/PCLImage.h>
+#include <util/KeypointSorter.hpp>
+#include <util/SquareSorter.hpp>
 
 #include "util/Logger.hpp"
 #include "util/CameraId.hpp"
@@ -54,6 +56,9 @@ shared_ptr<vector<vector<Point2d>>> SquareDetector::detectSquareCorners(Mat imag
         circle(image, corner, CIRCLE_RADIUS, Scalar(255, 0, 0), CIRCLE_THICKNESS);
     auto squares = detectSquares(gray);
     drawContours(image, squares, -1, Scalar(0, 0, 255));
+    SquareSorter::sortSquares(squares, camera_id);
+    for(size_t i = 0; i < squares.size(); ++i)
+        putText(image, to_string(i+1), squares.at(i).at(0), FONT_HERSHEY_SIMPLEX, 1.0, Scalar(0, 255, 0));
     auto square_corners(resolveCornersToSquares(corners, squares));
     bool valid = false;
 
@@ -101,23 +106,6 @@ vector<vector<Point>> SquareDetector::detectSquares(cv::Mat image) {
     return move(square_contours);
 }
 
-vector<vector<Point>> SquareDetector::sortSquares(const vector<vector<Point>>& squares, std::string camera_id) {
-    vector<Square> squares_for_sorting;
-    for(const auto& sq : squares) {
-        Moments mu = moments(sq, false);
-        Point2d center = Point2d( mu.m10/mu.m00 , mu.m01/mu.m00 );
-        Square s;
-        s.points = sq;
-        s.centroid = center;
-        squares_for_sorting.push_back(s);
-    }
-
-
-
-}
-
-bool SquareDetector::sortSquaresCenter()
-
 vector<Point2d> SquareDetector::detectCorners(Mat image) {
     vector<cv::Point2d> corners;
     goodFeaturesToTrack(image,
@@ -151,7 +139,7 @@ shared_ptr<vector<vector<Point2d>>> SquareDetector::resolveCornersToSquares(cons
         }
         if (single_square_corners.size() == 4) {
             squares_corners->push_back(single_square_corners);
-            Logger::log(Logger::INFO, "Pushed a square\n");
+//            Logger::log(Logger::INFO, "Pushed a square\n");
         }
     }
 
@@ -165,7 +153,7 @@ void SquareDetector::drawSquareCorners(Mat image,
     if (!image.data || !squareCorners || !palette)
         return;
 
-    if (squareCorners->size() != 2)
+    if (squareCorners->size() != 4)
         return;
 
     int color_index = 0;

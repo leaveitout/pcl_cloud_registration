@@ -5,11 +5,11 @@
 #ifndef PCL_CLOUD_REGISTRATION_SQUAREDETECTOR_HPP
 #define PCL_CLOUD_REGISTRATION_SQUAREDETECTOR_HPP
 
-#include <memorx>
+#include <memory>
 #include <pcl/PointIndices.h>
 #include <pcl/io/image.h>
 #include <pcl/PCLImage.h>
-#include "KexpointSorter.hpp"
+#include "KeypointSorter.hpp"
 #include "Palette.hpp"
 
 using namespace std;
@@ -22,20 +22,20 @@ class SquareDetector {
     static constexpr double MAX_CONTOUR_AREA = 10000;
     static constexpr double MIN_CONTOUR_AREA = 100;
     static constexpr double APPROX_POLY_LENGTH_RATIO = 0.02;
-    static constexpr double MAX_COSINE_LIMIT = 0.3;
+    static constexpr double MAX_COSINE_LIMIT = 0.5; // \pi/3
 
     // Parameters for corners / contours resolution
     static constexpr double MAX_DIST_CORNER_TO_CONTOUR_PT = 5.0;
 
     // Parameters for Shi-Tomasi algorithm
-    static constexpr int MAX_CORNERS = 20;
+    static constexpr int MAX_CORNERS = 40;
     static constexpr double QUALITY_LEVEL = 0.01;
     static constexpr double MIN_DISTANCE = 10.0;
     static constexpr double DEFAULT_K = 0.04;
     static constexpr bool USE_HARRIS = false;
     static constexpr int BLOCK_SIZE = 3;
 
-    // Drawing constexprants
+    // Drawing parameters
     static constexpr int CIRCLE_RADIUS = 4;
     static constexpr int CIRCLE_THICKNESS = -1; // Filled Circle
 

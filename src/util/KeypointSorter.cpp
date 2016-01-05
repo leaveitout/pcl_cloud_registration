@@ -19,7 +19,7 @@ bool KeypointSorter::sortKeyPointsLeft(vector<vector<cv::Point2d>>& keypoints) {
     if(!areKeypointsValid(keypoints))
         return false;
 
-    sort(keypoints.begin(), keypoints.end(), compare_vertical_squares_inverse());
+//    sort(keypoints.begin(), keypoints.end(), compare_vertical_squares_inverse());
 
     for(auto& sq : keypoints) {
         sort(sq.begin(), sq.end(), compare_horizontal());
@@ -33,7 +33,7 @@ bool KeypointSorter::sortKeyPointsCenter(vector<vector<cv::Point2d>>& keypoints)
     if(!areKeypointsValid(keypoints))
         return false;
 
-    sort(keypoints.begin(), keypoints.end(), compare_horizontal_squares_inverse());
+//    sort(keypoints.begin(), keypoints.end(), compare_horizontal_squares_inverse());
 
     for(auto& sq : keypoints) {
         sort(sq.begin(), sq.end(), compare_vertical_inverse());
@@ -47,7 +47,7 @@ bool KeypointSorter::sortKeyPointsRight(vector<vector<cv::Point2d>>& keypoints) 
     if(!areKeypointsValid(keypoints))
         return false;
 
-    sort(keypoints.begin(), keypoints.end(), compare_vertical_squares());
+//    sort(keypoints.begin(), keypoints.end(), compare_vertical_squares());
 
     for(auto& sq : keypoints) {
         sort(sq.begin(), sq.end(), compare_horizontal_inverse());

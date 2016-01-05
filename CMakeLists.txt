@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.3)
 project(pcl_cloud_registration)
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+#set(CMAKE_EXE_LINKER_FLAGS "-Wl,-export-dynamic")
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_HOME_DIRECTORY}/bin)
 
 find_package(PCL 1.7 REQUIRED)
@@ -36,7 +37,25 @@ set(SOURCE_FILES
         include/nodes/Synchronizer.hpp
         include/types/TimedCloud.hpp
         include/types/TimedImage.hpp
-        src/nodes/Synchronizer.cpp include/nodes/Processor.hpp include/nodes/SyncProcessor.hpp include/types/TimedData.hpp include/types/TimedCloudAndImagePair.hpp include/nodes/MultiCloudAndImagePairViewer.hpp include/nodes/Viewer.hpp include/nodes/Calibrator.hpp src/util/KeypointSorter.cpp include/util/KeypointSorter.hpp src/util/SquareDetector.cpp include/util/SquareDetector.hpp src/util/Palette.cpp include/util/Palette.hpp include/util/CameraId.hpp src/util/CameraConfig.cpp include/util/CameraConfig.hpp src/util/SquareSorter.cpp include/util/SquareSorter.hpp)
+        src/nodes/Synchronizer.cpp
+        include/nodes/Processor.hpp
+        include/nodes/SyncProcessor.hpp
+        include/types/TimedData.hpp
+        include/types/TimedCloudAndImagePair.hpp
+        include/nodes/MultiCloudAndImagePairViewer.hpp
+        include/nodes/Viewer.hpp
+        include/nodes/Calibrator.hpp
+        src/util/KeypointSorter.cpp
+        include/util/KeypointSorter.hpp
+        src/util/SquareDetector.cpp
+        include/util/SquareDetector.hpp
+        src/util/Palette.cpp
+        include/util/Palette.hpp
+        include/util/CameraId.hpp
+        src/util/CameraConfig.cpp
+        include/util/CameraConfig.hpp
+        src/util/SquareSorter.cpp
+        include/util/SquareSorter.hpp)
 
 add_executable(pcl_cloud_registration ${SOURCE_FILES})
 

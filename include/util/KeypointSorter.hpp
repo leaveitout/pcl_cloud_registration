@@ -53,29 +53,29 @@ private:
         }
     };
 
-    struct compare_horizontal_squares {
-        inline bool operator()(const vector<cv::Point2d> &square1, const vector<cv::Point2d> &square2) {
-            return KeypointSorter::getCentroid(square1).x < KeypointSorter::getCentroid(square2).x;
-        }
-    };
-
-    struct compare_horizontal_squares_inverse {
-        inline bool operator()(const vector<cv::Point2d> &square1, const vector<cv::Point2d> &square2) {
-            return KeypointSorter::getCentroid(square1).x > KeypointSorter::getCentroid(square2).x;
-        }
-    };
-
-    struct compare_vertical_squares {
-        inline bool operator()(const vector<cv::Point2d> &square1, const vector<cv::Point2d> &square2) {
-            return KeypointSorter::getCentroid(square1).y < KeypointSorter::getCentroid(square2).y;
-        }
-    };
-
-    struct compare_vertical_squares_inverse {
-        inline bool operator()(const vector<cv::Point2d> &square1, const vector<cv::Point2d> &square2) {
-            return KeypointSorter::getCentroid(square1).y > KeypointSorter::getCentroid(square2).y;
-        }
-    };
+//    struct compare_horizontal_squares {
+//        inline bool operator()(const vector<cv::Point2d> &square1, const vector<cv::Point2d> &square2) {
+//            return KeypointSorter::getCentroid(square1).x < KeypointSorter::getCentroid(square2).x;
+//        }
+//    };
+//
+//    struct compare_horizontal_squares_inverse {
+//        inline bool operator()(const vector<cv::Point2d> &square1, const vector<cv::Point2d> &square2) {
+//            return KeypointSorter::getCentroid(square1).x > KeypointSorter::getCentroid(square2).x;
+//        }
+//    };
+//
+//    struct compare_vertical_squares {
+//        inline bool operator()(const vector<cv::Point2d> &square1, const vector<cv::Point2d> &square2) {
+//            return KeypointSorter::getCentroid(square1).y < KeypointSorter::getCentroid(square2).y;
+//        }
+//    };
+//
+//    struct compare_vertical_squares_inverse {
+//        inline bool operator()(const vector<cv::Point2d> &square1, const vector<cv::Point2d> &square2) {
+//            return KeypointSorter::getCentroid(square1).y > KeypointSorter::getCentroid(square2).y;
+//        }
+//    };
 };
 
 #endif //PCL_CLOUD_REGISTRATION_KEYPOINTSORTER_HPP

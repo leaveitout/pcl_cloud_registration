@@ -9,27 +9,52 @@
 
 using namespace cv;
 
-bool SquareSorter::sortSquares(vector<vector<Point>> &squares, string camera_id) {
-    bool valid = false;
+bool SquareSorter::areSquaresValid(const vector<vector<Point>> &square_contours) {
+    return square_contours.size() == NUM_SQUARES;
+}
+
+bool SquareSorter::sortSquares(vector<vector<Point>> &square_contours, string camera_id) {
+    if(!areSquaresValid(square_contours))
+        return false;
+
+    vector<Square> squares;
+    for(const auto& contour : square_contours) {
+        Moments mu = moments(contour, true);
+        Point2d center = Point2d( mu.m10/mu.m00 , mu.m01/mu.m00 );
+        Square s;
+        s.points = contour;
+        s.centroid = center;
+        squares.push_back(s);
+    }
+
     if (camera_id.compare(CameraId::left) == 0)
-        valid = SquareSorter::sortSquaresLeft(squares);
+        SquareSorter::sortSquaresLeft(squares);
     else if (camera_id.compare(CameraId::center) == 0)
-        valid = SquareSorter::sortSquaresCenter(squares);
+        SquareSorter::sortSquaresCenter(squares);
     else if (camera_id.compare(CameraId::right) == 0)
-        valid = SquareSorter::sortSquaresRight(squares);
+        SquareSorter::sortSquaresRight(squares);
 
-    return valid;
+    for(size_t i = 0; i < squares.size(); ++i)
+        square_contours.at(i) = squares.at(i).points;
+
+    return true;
 }
 
-bool SquareSorter::sortSquaresLeft(vector<vector<Point>> &squares) {
-
+void SquareSorter::sortSquaresLeft(vector<Square> &squares) {
+    sort(squares.begin(), squares.end(), compare_horizontal());
+    sort(squares.begin(), squares.begin() + (squares.size()/2), compare_vertical_inverse());
+    sort(squares.begin() + (squares.size()/2), squares.end(), compare_vertical_inverse());
 }
 
-bool SquareSorter::sortSquaresCenter(vector<vector<Point>> &squares) {
-
+void SquareSorter::sortSquaresCenter(vector<Square> &squares) {
+    sort(squares.begin(), squares.end(), compare_vertical_inverse());
+    sort(squares.begin(), squares.begin() + (squares.size()/2), compare_horizontal_inverse());
+    sort(squares.begin() + (squares.size()/2), squares.end(), compare_horizontal_inverse());
 }
 
-bool SquareSorter::sortSquaresRight(vector<vector<Point>> &squares) {
-
+void SquareSorter::sortSquaresRight(vector<Square> &squares) {
+    sort(squares.begin(), squares.end(), compare_horizontal_inverse());
+    sort(squares.begin(), squares.begin() + (squares.size()/2), compare_vertical());
+    sort(squares.begin() + (squares.size()/2), squares.end(), compare_vertical());
 }
 

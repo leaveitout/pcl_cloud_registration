@@ -17,8 +17,8 @@ namespace CameraConfig {
         // TODO: Put this in an xml or json file
         void initializeMap() {
             cameras.push_back(CameraId::center);
+//            cameras.push_back(CameraId::left);
             cameras.push_back(CameraId::right);
-            cameras.push_back(CameraId::left);
         }
     }
 
