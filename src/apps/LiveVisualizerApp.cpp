@@ -9,6 +9,7 @@
 #include <nodes/MultiSyncedCloudImageGrabberProducer.hpp>
 #include <nodes/MultiCloudAndImagePairViewer.hpp>
 #include <nodes/Calibrator.hpp>
+#include <util/CameraIntrinsicsLoader.hpp>
 
 LiveVisualizerApp::LiveVisualizerApp(int argc, char **argv) : App(argc, argv) {
 
@@ -29,6 +30,8 @@ int LiveVisualizerApp::exec() {
             auto grabber = std::make_shared<NI2Grabber>(ss.str());
             if (grabber->isRunning())
                 Logger::log(Logger::INFO, "Grabber is running\n");
+
+            CameraIntrinsicsLoader::applyIntrinsics(i, grabber);
             grabbers.push_back(grabber);
         }
         MultiSyncedCloudImageGrabberProducer<pcl::PointXYZRGBA> producer(grabbers, 1);
