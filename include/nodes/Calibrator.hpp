@@ -12,6 +12,7 @@
 #include <pcl/registration/icp.h>
 #include <pcl/registration/icp_nl.h>
 #include <pcl/filters/filter.h>
+#include <util/CameraExtrinsicsLoader.hpp>
 #include "Producer.hpp"
 #include "Processor.hpp"
 #include "types/TimedCloudAndImagePair.hpp"
@@ -43,160 +44,264 @@ public:
                int num_iterations = NUM_ITERATIONS_DEFAULT) :
             Node(id, description),
             Processor<TimedCloudAndImagePairPtrVectorPtr>(id, description, buffer),
-            Producer<TimedCloudAndImagePairPtrVectorPtr>(id, description) {
+            Producer<TimedCloudAndImagePairPtrVectorPtr>(id, description, 2) {
         // TODO: Hard-coded number to be removed
-        palette_ = std::make_shared<Palette>(16);
-        num_iterations_to_do_ = num_iterations;
+//        palette_ = std::make_shared<Palette>(16);
+//        num_iterations_to_do_ = num_iterations;
+        // Load the two RT matrices
+
+
     }
 
 protected:
     virtual void processBufferElement(TimedCloudAndImagePairPtrVectorPtr element) {
         std::call_once(flag, [&]() {
             num_clouds_in_element = element->size();
-            transformations_ =
-                    std::make_shared<std::vector<std::shared_ptr<Eigen::Matrix4f>>>
-                            (num_clouds_in_element - 1);
-            num_iterations_done_ = std::make_shared<std::vector<int>>(num_clouds_in_element - 1);
-            for (auto &num : *num_iterations_done_)
-                num = 0;
+//            transformations_ =
+//                    std::make_shared<std::vector<std::shared_ptr<Eigen::Matrix4f>>>
+//                            (num_clouds_in_element - 1);
+//            num_iterations_done_ = std::make_shared<std::vector<int>>(num_clouds_in_element - 1);
+//            for (auto &num : *num_iterations_done_)
+//                num = 0;
+            init_RTs_ = std::make_shared<std::vector<Eigen::Matrix4f>>(num_clouds_in_element - 1);
+            CameraExtrinsicsLoader::getExtrinsics(1, 2, init_RTs_->at(0));
+            CameraExtrinsicsLoader::getExtrinsics(3, 2, init_RTs_->at(1));
         });
 
+//        if(element) {
+//            if (element->at(1)->getTimedCloud() && element->at(0)->getTimedCloud() &&
+//                    element->at(2)->getTimedCloud() ) {
+//                auto target_result = boost::make_shared<Cloud>();
+////                CloudPtr source = boost::make_shared<Cloud>();
+////                source = element->at(0)->getTimedCloud()->getData();
+////                *target_result += *source;
+////                source = element->at(1)->getTimedCloud()->getData();
+////                *target_result += *source;
+////                source = element->at(2)->getTimedCloud()->getData();
+////                *target_result += *source;
+//                *target_result += *element->at(0)->getTimedCloud()->getData();
+//                *target_result += *element->at(1)->getTimedCloud()->getData();
+//                *target_result += *element->at(2)->getTimedCloud()->getData();
+//                CloudConstPtr const_target_result = target_result;
+//                element->at(0)->getTimedCloud()->setData(const_target_result);
+//            }
+//        }
         if (element) {
-            std::vector<pcl::PointIndices::Ptr> point_indices(num_clouds_in_element);
-            // Need target cloud and image to find translation
-            if (element->at(0)->getTimedImage() && element->at(0)->getTimedCloud()) {
-                for (size_t idx = 1; idx < num_clouds_in_element; ++idx) {
-                    if (num_iterations_done_->at(idx - 1) < num_iterations_to_do_) {
-                        // Need target cloud and image
-                        if (element->at(idx)->getTimedImage() &&
-                            element->at(idx)->getTimedCloud()) {
-                            // Get indices for target cloud
-                            if (!point_indices.at(0)) {
-                                auto image = element->at(0)->getTimedImage()->getData();
-                                point_indices.at(0) = SquareDetector::getPointIndicesOfCorners(
-                                        image,
-                                        CameraConfig::getCameraIdAt(0),
-                                        palette_);
-                            }
-
-                            // Only continue if we found correct indices
-                            // TODO: Change the indices size check to be the number of indices we need
-                            auto target_indices = point_indices.at(0);
-                            auto target = element->at(0)->getTimedCloud()->getData();
-
-                            if (target_indices) {
-                                if (target_indices->indices.size() > 0) {
-                                    // Get indices for source cloud
-                                    auto image = element->at(idx)->getTimedImage()->getData();
-                                    point_indices.at(idx) =
-                                            SquareDetector::getPointIndicesOfCorners(
-                                                    image,
-                                                    CameraConfig::getCameraIdAt(idx),
-                                                    palette_);
-
-                                    auto source_indices = point_indices.at(idx);
-                                    auto source = element->at(idx)->getTimedCloud()->getData();
-                                    std::shared_ptr<Eigen::Matrix4f> transformation =
-                                            std::make_shared<Eigen::Matrix4f>();
-
-                                    if (source_indices) {
-                                        if (source_indices->indices.size() ==
-                                            target_indices->indices.size()) {
-                                            pcl::registration::TransformationEstimationSVD<PointType,
-                                                    PointType> svd;
-                                            svd.estimateRigidTransformation(*source,
-                                                                            source_indices->indices,
-                                                                            *target,
-                                                                            target_indices->indices,
-                                                                            *transformation);
-                                            std::stringstream ss;
-                                            ss << "Transformation Matrix (" << idx << "): " <<
-                                            std::endl << *transformation << std::endl;
-                                            Logger::log(Logger::INFO, ss.str());
-                                        }
-                                    }
-
-                                    if (!transformation->hasNaN() &&
-                                            !transformation->isIdentity()) {
-                                        auto transformed_cloud = boost::make_shared<Cloud>();
-                                        pcl::transformPointCloud(*source,
-                                                                 *transformed_cloud,
-                                                                 *transformation);
-                                        // Remove all NaNs from clouds
-                                        std::vector<int> mapping;
-                                        pcl::removeNaNFromPointCloud(*transformed_cloud,
-                                                                     *transformed_cloud,
-                                                                     mapping);
-
-                                        auto target_clean = boost::make_shared<Cloud>();
-                                        pcl::removeNaNFromPointCloud(*target,
-                                                                     *target_clean,
-                                                                     mapping);
-
-                                        pcl::IterativeClosestPoint<PointType, PointType> icp;
-                                        icp.setInputSource(transformed_cloud);
-                                        icp.setInputTarget(target_clean);
-                                        auto target_result = boost::make_shared<Cloud>();
-//                                        icp.align(*target_result);
-//                                        std::stringstream ss;
-//                                        ss << "Has converged: " << icp.hasConverged() <<
-//                                                " score: " << icp.getFitnessScore() << std::endl;
-//                                        ss << icp.getFinalTransformation() << std::endl;
-//                                        Logger::log(Logger::INFO, ss.str());
-
-
-                                        std::shared_ptr<Eigen::Matrix4f> final_transformation =
-                                                std::make_shared<Eigen::Matrix4f>();
-//                                        *final_transformation = *transformation;
-//                                        final_transformation.
-//                                        *final_transformation = icp.getFinalTransformation() *
-//                                                *transformation;
-                                        *final_transformation = *transformation;
-
-                                        transformations_->at(idx - 1) = final_transformation;
-                                        num_iterations_done_->at(idx - 1)++;
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
-            // Check if we need to transform clouds
-            bool to_transform = false;
-            for (auto tr : *transformations_)
-                if (tr)
-                    to_transform = true;
-
-            if (to_transform) {
+            if (element->at(1)->getTimedCloud()) {
+                auto target_result = boost::make_shared<Cloud>();
+                auto target = element->at(1)->getTimedCloud()->getData();
+                *target_result = *target;
+                // Clean NaNs
+                std::vector<int> mapping;
+                pcl::removeNaNFromPointCloud(*target_result, *target_result, mapping);
                 if (element->at(0)->getTimedCloud()) {
-                    auto target_result = boost::make_shared<Cloud>();
-                    *target_result += *element->at(0)->getTimedCloud()->getData();
-                    for (size_t idx = 1; idx < num_clouds_in_element; ++idx) {
-                        if (element->at(idx)->getTimedCloud() && transformations_->at(idx - 1)) {
-                            auto transformed_cloud = boost::make_shared<Cloud>();
-                            pcl::transformPointCloud(*element->at(idx)->getTimedCloud()->getData(),
-                                                     *transformed_cloud,
-                                                     *transformations_->at(idx - 1));
-                            *target_result += *transformed_cloud;
-                        }
-                    }
-
-                    CloudConstPtr const_target_result = target_result;
-                    element->at(0)->getTimedCloud()->setData(const_target_result);
+                    auto source = element->at(0)->getTimedCloud()->getData();
+                    auto transformed_cloud = boost::make_shared<Cloud>();
+//                    pcl::removeNaNFromPointCloud(*source, *transformed_cloud, mapping);
+                    pcl::transformPointCloud(*source, *transformed_cloud, init_RTs_->at(0));
+                    *target_result += *transformed_cloud;
                 }
-
+                if (element->at(2)->getTimedCloud()) {
+                    auto source = element->at(2)->getTimedCloud()->getData();
+                    auto transformed_cloud = boost::make_shared<Cloud>();
+//                    pcl::removeNaNFromPointCloud(*source, *transformed_cloud, mapping);
+                    pcl::transformPointCloud(*source, *transformed_cloud, init_RTs_->at(1));
+                    *target_result += *transformed_cloud;
+                }
+                CloudConstPtr const_target_result = target_result;
+                std::stringstream ss1;
+                element->at(1)->getTimedCloud()->setData(target_result);
             }
         }
-
         this->getBuffer()->pushBack(element);
-
-//        if (element->at(idx)->getTimedCloud() &&
-//            num_iterations_done_->at(idx - 1) > 0 &&
-//            transformations_->(idx - 1)) {
-
     }
+//            if (to_transform) {
+//                if (element->at(0)->getTimedCloud()) {
+//                    auto target_result = boost::make_shared<Cloud>();
+//                    *target_result += *element->at(0)->getTimedCloud()->getData();
+//                    for (size_t idx = 1; idx < num_clouds_in_element; ++idx) {
+//                        if (element->at(idx)->getTimedCloud() && transformations_->at(idx - 1)) {
+//                            auto transformed_cloud = boost::make_shared<Cloud>();
+//                            pcl::transformPointCloud(*element->at(idx)->getTimedCloud()->getData(),
+//                                                     *transformed_cloud,
+//                                                     *transformations_->at(idx - 1));
+//                            *target_result += *transformed_cloud;
+//                        }
+//                    }
+//
+//                    CloudConstPtr const_target_result = target_result;
+//                    element->at(0)->getTimedCloud()->setData(const_target_result);
+//                }
+//
+//            }
+
+//                    for (size_t idx = 1; idx < num_clouds_in_element; ++idx) {
+//                        if (element->at(idx)->getTimedCloud() && transformations_->at(idx - 1)) {
+//                            auto transformed_cloud = boost::make_shared<Cloud>();
+//                            pcl::transformPointCloud(*element->at(idx)->getTimedCloud()->getData(),
+//                                                     *transformed_cloud,
+//                                                     *transformations_->at(idx - 1));
+//                            *target_result += *transformed_cloud;
+//                        }
+//                    }
+//
+//                    CloudConstPtr const_target_result = target_result;
+//                    element->at(0)->getTimedCloud()->setData(const_target_result);
+//            }
+//        });
+//    }
+//    virtual void processBufferElement(TimedCloudAndImagePairPtrVectorPtr element) {
+//        std::call_once(flag, [&]() {
+//            num_clouds_in_element = element->size();
+//            transformations_ =
+//                    std::make_shared<std::vector<std::shared_ptr<Eigen::Matrix4f>>>
+//                            (num_clouds_in_element - 1);
+//            num_iterations_done_ = std::make_shared<std::vector<int>>(num_clouds_in_element - 1);
+//            for (auto &num : *num_iterations_done_)
+//                num = 0;
+//        });
+//
+//        if (element) {
+//            std::vector<pcl::PointIndices::Ptr> point_indices(num_clouds_in_element);
+//            // Need target cloud and image to find translation
+//            if (element->at(0)->getTimedImage() && element->at(0)->getTimedCloud()) {
+//                for (size_t idx = 1; idx < num_clouds_in_element; ++idx) {
+//                    if (num_iterations_done_->at(idx - 1) < num_iterations_to_do_) {
+//                        // Need target cloud and image
+//                        if (element->at(idx)->getTimedImage() &&
+//                            element->at(idx)->getTimedCloud()) {
+//                            // Get indices for target cloud
+//                            if (!point_indices.at(0)) {
+//                                auto image = element->at(0)->getTimedImage()->getData();
+//                                point_indices.at(0) = SquareDetector::getPointIndicesOfCorners(
+//                                        image,
+//                                        CameraConfig::getCameraIdAt(0),
+//                                        palette_);
+//                            }
+//
+//                            // Only continue if we found correct indices
+//                            // TODO: Change the indices size check to be the number of indices we need
+//                            auto target_indices = point_indices.at(0);
+//                            auto target = element->at(0)->getTimedCloud()->getData();
+//
+//                            if (target_indices) {
+//                                if (target_indices->indices.size() > 0) {
+//                                    // Get indices for source cloud
+//                                    auto image = element->at(idx)->getTimedImage()->getData();
+//                                    point_indices.at(idx) =
+//                                            SquareDetector::getPointIndicesOfCorners(
+//                                                    image,
+//                                                    CameraConfig::getCameraIdAt(idx),
+//                                                    palette_);
+//
+//                                    auto source_indices = point_indices.at(idx);
+//                                    auto source = element->at(idx)->getTimedCloud()->getData();
+//                                    std::shared_ptr<Eigen::Matrix4f> transformation =
+//                                            std::make_shared<Eigen::Matrix4f>();
+//
+//                                    if (source_indices) {
+//                                        if (source_indices->indices.size() ==
+//                                            target_indices->indices.size()) {
+//                                            pcl::registration::TransformationEstimationSVD<PointType,
+//                                                    PointType> svd;
+//                                            svd.estimateRigidTransformation(*source,
+//                                                                            source_indices->indices,
+//                                                                            *target,
+//                                                                            target_indices->indices,
+//                                                                            *transformation);
+//                                            std::stringstream ss;
+//                                            ss << "Transformation Matrix (" << idx << "): " <<
+//                                            std::endl << *transformation << std::endl;
+//                                            Logger::log(Logger::INFO, ss.str());
+//                                        }
+//                                    }
+//
+//                                    if (!transformation->hasNaN() &&
+//                                            !transformation->isIdentity()) {
+//                                        auto transformed_cloud = boost::make_shared<Cloud>();
+//                                        pcl::transformPointCloud(*source,
+//                                                                 *transformed_cloud,
+//                                                                 *transformation);
+//                                        // Remove all NaNs from clouds
+//                                        std::vector<int> mapping;
+//                                        pcl::removeNaNFromPointCloud(*transformed_cloud,
+//                                                                     *transformed_cloud,
+//                                                                     mapping);
+//
+//                                        auto target_clean = boost::make_shared<Cloud>();
+//                                        pcl::removeNaNFromPointCloud(*target,
+//                                                                     *target_clean,
+//                                                                     mapping);
+//
+//                                        pcl::IterativeClosestPoint<PointType, PointType> icp;
+//                                        icp.setInputSource(transformed_cloud);
+//                                        icp.setInputTarget(target_clean);
+//                                        auto target_result = boost::make_shared<Cloud>();
+////                                        icp.align(*target_result);
+////                                        std::stringstream ss;
+////                                        ss << "Has converged: " << icp.hasConverged() <<
+////                                                " score: " << icp.getFitnessScore() << std::endl;
+////                                        ss << icp.getFinalTransformation() << std::endl;
+////                                        Logger::log(Logger::INFO, ss.str());
+//
+//
+//                                        std::shared_ptr<Eigen::Matrix4f> final_transformation =
+//                                                std::make_shared<Eigen::Matrix4f>();
+////                                        *final_transformation = *transformation;
+////                                        final_transformation.
+////                                        *final_transformation = icp.getFinalTransformation() *
+////                                                *transformation;
+//                                        *final_transformation = *transformation;
+//
+//                                        transformations_->at(idx - 1) = final_transformation;
+//                                        num_iterations_done_->at(idx - 1)++;
+//                                    }
+//                                }
+//                            }
+//                        }
+//                    }
+//                }
+//            }
+//
+//            // Check if we need to transform clouds
+//            bool to_transform = false;
+//            for (auto tr : *transformations_)
+//                if (tr)
+//                    to_transform = true;
+//
+//            if (to_transform) {
+//                if (element->at(0)->getTimedCloud()) {
+//                    auto target_result = boost::make_shared<Cloud>();
+//                    *target_result += *element->at(0)->getTimedCloud()->getData();
+//                    for (size_t idx = 1; idx < num_clouds_in_element; ++idx) {
+//                        if (element->at(idx)->getTimedCloud() && transformations_->at(idx - 1)) {
+//                            auto transformed_cloud = boost::make_shared<Cloud>();
+//                            pcl::transformPointCloud(*element->at(idx)->getTimedCloud()->getData(),
+//                                                     *transformed_cloud,
+//                                                     *transformations_->at(idx - 1));
+//                            *target_result += *transformed_cloud;
+//                        }
+//                    }
+//
+//                    CloudConstPtr const_target_result = target_result;
+//                    element->at(0)->getTimedCloud()->setData(const_target_result);
+//                }
+//
+//            }
+//        }
+//
+//        this->getBuffer()->pushBack(element);
+//
+////        if (element->at(idx)->getTimedCloud() &&
+////            num_iterations_done_->at(idx - 1) > 0 &&
+////            transformations_->(idx - 1)) {
+//
+//    }
+
+
+
+
+
 
 //        // Check that we have a full element
 //        for(size_t idx = 0; idx < num_clouds_in_element; ++idx) {
@@ -309,6 +414,7 @@ protected:
 private:
     size_t num_clouds_in_element;
     std::shared_ptr<std::vector<std::shared_ptr<Eigen::Matrix4f>>> transformations_;
+    std::shared_ptr<std::vector<Eigen::Matrix4f>> init_RTs_;
     std::shared_ptr<std::vector<int>> num_iterations_done_;
     int num_iterations_to_do_;
     std::once_flag flag;

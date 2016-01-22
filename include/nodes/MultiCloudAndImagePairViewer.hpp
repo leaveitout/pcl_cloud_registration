@@ -46,11 +46,14 @@ protected:
             auto cloud_image_pair = element->at(idx);
             if (cloud_image_pair) {
                 auto timed_cloud = cloud_image_pair->getTimedCloud();
+                auto timed_image = cloud_image_pair->getTimedImage();
                 if (timed_cloud) {
                     auto cloud = timed_cloud->getData();
                     if (!viz->updatePointCloud(cloud, "OpenNICloud")) {
-                        viz->setPosition(0, 0);
-                        viz->setSize(cloud->width, cloud->height);
+                        viz->setPosition(idx * 800, 0);
+                        if(timed_image)
+                            img_viz->setPosition(idx * 800, 800);
+                        viz->setSize(640, 480);
                         viz->addPointCloud(cloud, "OpenNICloud");
                         viz->resetCameraViewpoint("OpenNICloud");
                         viz->setCameraPosition(
@@ -60,13 +63,15 @@ protected:
                         viz->addText(std::to_string(idx), 0, 0, "Camera Index");
                     }
                 }
-                auto timed_image = cloud_image_pair->getTimedImage();
                 if(timed_image) {
                     auto image = timed_image->getData();
-                    if(image->getEncoding() == pcl::io::Image::RGB)
+                    if(image->getEncoding() == pcl::io::Image::RGB) {
+//                        img_viz->setPosition(idx * 640, 600);
                         img_viz->addRGBImage(reinterpret_cast<const unsigned char*>(image->getData()),
                                              image->getWidth(),
                                              image->getHeight());
+
+                    }
                 }
             }
             img_viz->spinOnce();

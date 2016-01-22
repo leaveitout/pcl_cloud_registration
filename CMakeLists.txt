@@ -55,7 +55,7 @@ set(SOURCE_FILES
         src/util/CameraConfig.cpp
         include/util/CameraConfig.hpp
         src/util/SquareSorter.cpp
-        include/util/SquareSorter.hpp include/util/CameraIntrinsicsLoader.hpp src/util/CameraIntrinsicsLoader.cpp include/nodes/CalibratorAcircles.hpp)
+        include/util/SquareSorter.hpp include/util/CameraIntrinsicsLoader.hpp src/util/CameraIntrinsicsLoader.cpp include/nodes/CalibratorAcircles.hpp src/util/CameraExtrinsicsLoader.cpp include/util/CameraExtrinsicsLoader.hpp)
 
 add_executable(pcl_cloud_registration ${SOURCE_FILES})
 

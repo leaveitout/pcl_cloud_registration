@@ -41,7 +41,7 @@ int LiveVisualizerApp::exec() {
         producer.start();
         calibrator.start();
         viewer.start();
-        std::this_thread::sleep_for(std::chrono::seconds(5));
+        std::this_thread::sleep_for(std::chrono::seconds(10));
         producer.stop();
         calibrator.stop();
         viewer.stop();

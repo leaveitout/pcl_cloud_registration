@@ -15,9 +15,11 @@ bool CameraIntrinsicsLoader::applyIntrinsics(size_t camera_num, std::shared_ptr<
     std::string ir_filename = ss2.str();
 
     cv::FileStorage fs_rgb;
-    fs_rgb.open(rgb_filename.c_str(), cv::FileStorage::READ);
+    if(!fs_rgb.open(rgb_filename.c_str(), cv::FileStorage::READ) )
+        return false;
     cv::FileStorage fs_ir;
-    fs_ir.open(ir_filename.c_str(), cv::FileStorage::READ);
+    if(!fs_ir.open(ir_filename.c_str(), cv::FileStorage::READ) )
+        return false;
 
     cv::Mat C_rgb = cv::Mat_<double>::zeros(3, 3);
     cv::Mat C_ir = cv::Mat_<double>::zeros(3, 3);
