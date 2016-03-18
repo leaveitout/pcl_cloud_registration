@@ -1,5 +1,6 @@
 //
 // Created by sean on 06/12/15.
+// Test edit
 //
 
 #ifndef PCL_CLOUD_REGISTRATION_BUFFER_HPP
